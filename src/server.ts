@@ -1,3 +1,4 @@
+// src/server.ts
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -13,31 +14,42 @@ import authRoutes from "./routes/auth.routes";
 import authMiddleware from "./middlewares/authmiddleware";
 import recuperarSenhaRoutes from "./routes/recuperarSenha.routes";
 
-
 dotenv.config();
 
 const app = express();
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
+// ----------------------
 // Rotas públicas
-app.use("/recuperar-senha", recuperarSenhaRoutes);
+// ----------------------
 app.use("/auth", authRoutes);
 app.use("/home", homeRoutes);
-
-// Rotas protegidas (exemplo)
-app.get("/tratamento", authMiddleware, (req, res) => {
-  res.json({ message: "Acesso autorizado ao tratamento" });
+app.use("/recuperar-senha", recuperarSenhaRoutes);
+app.get("/auth/teste", (req, res) => {
+  res.send("Rota Auth funcionando!");
 });
 
+// ----------------------
+// Rotas protegidas
+// ----------------------
+// Qualquer rota que você queira proteger com token JWT
+app.use("/tratamento", authMiddleware, tratamentoRoutes);
+
+// ----------------------
 // Rotas gerais
+// ----------------------
 app.use("/medicamento", medicamentoRoutes);
 app.use("/farmaceutico", farmaceuticoRoutes);
 app.use("/paciente", pacienteRoutes);
 app.use("/horario", horarioRoutes);
 app.use("/consulta", consultaRoutes);
-app.use("/tratamento", tratamentoRoutes);
 
+// Porta do servidor
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});

@@ -1,94 +1,78 @@
-// =========================
-// DATABASE CONFIG
-// =========================
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-// =========================
-// MODELS
-// =========================
-
 model farmaceutico {
-  ID                     Int       @id @default(autoincrement())
+  ID                     Int                      @id @default(autoincrement())
   Nome_Farmaceutico      String
   Sobrenome_Farmaceutico String
-  Email                  String    @unique
-  CPF                    String    @unique
-  RN                     String    @unique
+  Email                  String                   @unique
+  CPF                    String                   @unique
+  RN                     String                   @unique
   Telefone               String?
   Genero                 Genero?
-  Senha_Hash             String
+  Data_Criacao           DateTime?                @default(now())
+  Data_Atualizacao       DateTime?                @default(now()) @updatedAt
   ResetToken             String?
   ResetTokenExpira       DateTime?
-  Data_Criacao           DateTime? @default(now())
-  Data_Atualizacao       DateTime? @default(now()) @updatedAt
-
+  Senha_Hash             String
+  Perfil_ID              Int?
+  consulta               consulta[]
   tratamento_auditoria   tratamento_auditoria[]
   tratamento_medicamento tratamento_medicamento[]
-  consulta               consulta[]
 }
 
-
-
 model medicamentos {
-  ID                   Int         @id @default(autoincrement())
-  Nome_Medicamento     String
-  Dosagem              String
-  Tipo                 Tipo?
-  Tarja                Tarja?      @default(Sem_tarja)
-  Via_consumo          ViaConsumo?
-  Mg_Ml                Decimal?
-  Validade_Medicamento DateTime?
-  Principio_Ativo      String?
-  Alertas              String?
-  Data_Criacao         DateTime?   @default(now())
-  Data_Atualizacao     DateTime?   @default(now()) @updatedAt
-
+  ID                                      Int                                       @id @default(autoincrement())
+  Nome_Medicamento                        String
+  Dosagem                                 String
+  Tipo                                    Tipo?
+  Tarja                                   Tarja?                                    @default(Sem_tarja)
+  Via_consumo                             ViaConsumo?
+  Mg_Ml                                   Decimal?
+  Validade_Medicamento                    DateTime?
+  Principio_Ativo                         String?
+  Alertas                                 String?
+  Data_Criacao                            DateTime?                                 @default(now())
+  Data_Atualizacao                        DateTime?                                 @default(now()) @updatedAt
   tratamento_auditoria                    tratamento_auditoria[]
   tratamento_medicamento_has_medicamentos tratamento_medicamento_has_medicamentos[]
 }
 
 model paciente {
-  ID               Int       @id @default(autoincrement())
-  Nome_paciente    String
-  Telefone         String?
-  Email            String?   @unique
-  Data_Nascimento  DateTime
-  Genero           Genero?
-  Profissao        String?
-  Data_Criacao     DateTime? @default(now())
-  Data_Atualizacao DateTime? @default(now()) @updatedAt
-
-  tratamento_medicamento_has_paciente tratamento_medicamento_has_paciente[]
+  ID                                  Int                                   @id @default(autoincrement())
+  Nome_paciente                       String
+  Telefone                            String?
+  Email                               String?                               @unique
+  Data_Nascimento                     DateTime
+  Genero                              Genero?
+  Profissao                           String?
+  Data_Criacao                        DateTime?                             @default(now())
+  Data_Atualizacao                    DateTime?                             @default(now()) @updatedAt
   consulta                            consulta[]
+  tratamento_medicamento_has_paciente tratamento_medicamento_has_paciente[]
 }
 
 model tratamento {
-  ID               Int       @id @default(autoincrement())
-  Diagnostico      String
-  Data_inicio      DateTime
-  Data_termino     DateTime?
-  Status           Status?   @default(Nao_iniciado)
-  Observacoes      String?
-  Data_Criacao     DateTime? @default(now())
-  Data_Atualizacao DateTime? @default(now()) @updatedAt
-
+  ID                     Int                      @id @default(autoincrement())
+  Diagnostico            String
+  Data_inicio            DateTime
+  Data_termino           DateTime?
+  Status                 Status?                  @default(Nao_iniciado)
+  Observacoes            String?
+  Data_Criacao           DateTime?                @default(now())
+  Data_Atualizacao       DateTime?                @default(now()) @updatedAt
   tratamento_auditoria   tratamento_auditoria[]
   tratamento_medicamento tratamento_medicamento[]
 }
 
-
-// =========================
-// TABELA AUDITORIA
-// =========================
 model tratamento_auditoria {
-  ID              Int       @id @default(autoincrement())
+  ID              Int           @id @default(autoincrement())
   Tratamento_id   Int
   Farmaceutico_id Int
   Medicamento_id  Int?
@@ -96,102 +80,93 @@ model tratamento_auditoria {
   Descricao       String?
   Dados_Antigos   Json?
   Dados_Novos     Json?
-  Data_Auditoria  DateTime? @default(now())
+  Data_Auditoria  DateTime?     @default(now())
+  farmaceutico    farmaceutico  @relation(fields: [Farmaceutico_id], references: [ID])
+  medicamentos    medicamentos? @relation(fields: [Medicamento_id], references: [ID])
+  tratamento      tratamento    @relation(fields: [Tratamento_id], references: [ID])
 
-  tratamento   tratamento    @relation(fields: [Tratamento_id], references: [ID])
-  farmaceutico farmaceutico  @relation(fields: [Farmaceutico_id], references: [ID])
-  medicamentos medicamentos? @relation(fields: [Medicamento_id], references: [ID])
+  @@index([Farmaceutico_id], map: "tratamento_auditoria_Farmaceutico_id_fkey")
+  @@index([Medicamento_id], map: "tratamento_auditoria_Medicamento_id_fkey")
+  @@index([Tratamento_id], map: "tratamento_auditoria_Tratamento_id_fkey")
 }
 
-// =========================
-// TRATAMENTO MEDICAMENTO
-// =========================
 model tratamento_medicamento {
-  ID                          Int         @id @default(autoincrement())
-  Tratamento_id               Int
-  Farmaceutico_id             Int
-  Frequencia                  Frequencia? @default(Sem_definicao)
-  Dosagem                     String
-  Duracao_dias                Int
-  Horario_Preferencial        String?
-  Quantidade_comprimidos      Int         @default(1)
-  Instrucoes                  String?
-  Data_Inicio_Tratamento      DateTime?
-  Data_Fim_Tratamento         DateTime?
-  Data_Ultimo_Acompanhamento  DateTime?
-  Observacoes_Acompanhamento  String?
-  Efeitos_Colaterais          String?
-  Adesao                      Adesao?     @default(Total)
-  Data_Proximo_Acompanhamento DateTime?
-  Data_Criacao                DateTime?   @default(now())
-  Data_Atualizacao            DateTime?   @default(now()) @updatedAt
-
-  tratamento                              tratamento                                @relation(fields: [Tratamento_id], references: [ID])
+  ID                                      Int                                       @id @default(autoincrement())
+  Tratamento_id                           Int
+  Farmaceutico_id                         Int
+  Frequencia                              Frequencia?                               @default(Sem_definicao)
+  Dosagem                                 String
+  Duracao_dias                            Int
+  Horario_Preferencial                    String?
+  Quantidade_comprimidos                  Int                                       @default(1)
+  Instrucoes                              String?
+  Data_Inicio_Tratamento                  DateTime?
+  Data_Fim_Tratamento                     DateTime?
+  Data_Ultimo_Acompanhamento              DateTime?
+  Observacoes_Acompanhamento              String?
+  Efeitos_Colaterais                      String?
+  Adesao                                  Adesao?                                   @default(Total)
+  Data_Proximo_Acompanhamento             DateTime?
+  Data_Criacao                            DateTime?                                 @default(now())
+  Data_Atualizacao                        DateTime?                                 @default(now()) @updatedAt
+  horario                                 horario[]
   farmaceutico                            farmaceutico                              @relation(fields: [Farmaceutico_id], references: [ID])
+  tratamento                              tratamento                                @relation(fields: [Tratamento_id], references: [ID])
   tratamento_medicamento_has_medicamentos tratamento_medicamento_has_medicamentos[]
   tratamento_medicamento_has_paciente     tratamento_medicamento_has_paciente[]
-  horario                                 horario[]
+
+  @@index([Farmaceutico_id], map: "tratamento_medicamento_Farmaceutico_id_fkey")
+  @@index([Tratamento_id], map: "tratamento_medicamento_Tratamento_id_fkey")
 }
 
-// =========================
-// TABELA PIVÔ MEDICAMENTOS
-// =========================
 model tratamento_medicamento_has_medicamentos {
   tratamento_medicamento_ID Int
   medicamento_ID            Int
-  Data_Associacao           DateTime? @default(now())
-
-  tratamento_medicamento tratamento_medicamento @relation(fields: [tratamento_medicamento_ID], references: [ID])
-  medicamentos           medicamentos           @relation(fields: [medicamento_ID], references: [ID])
+  Data_Associacao           DateTime?              @default(now())
+  medicamentos              medicamentos           @relation(fields: [medicamento_ID], references: [ID])
+  tratamento_medicamento    tratamento_medicamento @relation(fields: [tratamento_medicamento_ID], references: [ID])
 
   @@id([tratamento_medicamento_ID, medicamento_ID])
+  @@index([medicamento_ID], map: "tratamento_medicamento_has_medicamentos_medicamento_ID_fkey")
 }
 
-// =========================
-// TABELA PIVÔ PACIENTE
-// =========================
 model tratamento_medicamento_has_paciente {
   tratamento_medicamento_ID Int
   paciente_ID               Int
-  Data_Associacao           DateTime? @default(now())
-
-  tratamento_medicamento tratamento_medicamento @relation(fields: [tratamento_medicamento_ID], references: [ID])
-  paciente               paciente               @relation(fields: [paciente_ID], references: [ID])
+  Data_Associacao           DateTime?              @default(now())
+  paciente                  paciente               @relation(fields: [paciente_ID], references: [ID])
+  tratamento_medicamento    tratamento_medicamento @relation(fields: [tratamento_medicamento_ID], references: [ID])
 
   @@id([tratamento_medicamento_ID, paciente_ID])
+  @@index([paciente_ID], map: "tratamento_medicamento_has_paciente_paciente_ID_fkey")
 }
 
 model horario {
-  ID                        Int       @id @default(autoincrement())
+  ID                        Int                    @id @default(autoincrement())
   Tratamento_medicamento_ID Int
   Horario                   DateTime
-  Data_Criacao              DateTime? @default(now())
-  Data_Atualizacao          DateTime? @default(now()) @updatedAt
+  Data_Criacao              DateTime?              @default(now())
+  Data_Atualizacao          DateTime?              @default(now()) @updatedAt
+  tratamento_medicamento    tratamento_medicamento @relation(fields: [Tratamento_medicamento_ID], references: [ID])
 
-  tratamento_medicamento tratamento_medicamento @relation(fields: [Tratamento_medicamento_ID], references: [ID])
+  @@index([Tratamento_medicamento_ID], map: "horario_Tratamento_medicamento_ID_fkey")
 }
 
-// =========================
-// NOVO MODELO CONSULTA
-// =========================
-
 model consulta {
-  ID               Int       @id @default(autoincrement())
+  ID               Int          @id @default(autoincrement())
   Paciente_ID      Int
   Farmaceutico_ID  Int
   Data_Consulta    DateTime
   Motivo           String?
   Observacoes      String?
-  Data_Criacao     DateTime? @default(now())
-  Data_Atualizacao DateTime? @default(now()) @updatedAt
+  Data_Criacao     DateTime?    @default(now())
+  Data_Atualizacao DateTime?    @default(now()) @updatedAt
+  farmaceutico     farmaceutico @relation(fields: [Farmaceutico_ID], references: [ID])
+  paciente         paciente     @relation(fields: [Paciente_ID], references: [ID])
 
-  paciente     paciente     @relation(fields: [Paciente_ID], references: [ID])
-  farmaceutico farmaceutico @relation(fields: [Farmaceutico_ID], references: [ID])
+  @@index([Farmaceutico_ID], map: "consulta_Farmaceutico_ID_fkey")
+  @@index([Paciente_ID], map: "consulta_Paciente_ID_fkey")
 }
-
-// =========================
-// ENUMS SEM ACENTOS
-// =========================
 
 enum Genero {
   M
